@@ -85,6 +85,7 @@ let currentVersionId = null;
 let savedProposals = [];
 let fetchedClients = [];
 let linkedClientId = null;
+let acceptedNoted = false; // true once the acceptance note has been added in Client Tracker
 
 const defaultItems = [
   { label: "Standard Unit", qty: 2 },
@@ -435,6 +436,7 @@ function gatherFormState() {
     lineItems: lineItems.map((item) => ({ ...item })),
     photoDataUrl: photoDataUrl,
     clientId: linkedClientId,
+    acceptedNoted,
   };
 }
 
@@ -464,6 +466,7 @@ function applyFormState(state) {
   document.getElementById("customDiscountGroup").style.display =
     state.discountTier === "Custom" ? "block" : "none";
   linkedClientId = state.clientId || null;
+  acceptedNoted = !!state.acceptedNoted;
   photoDataUrl = state.photoDataUrl || null;
   if (photoDataUrl) {
     document.getElementById("photoPreviewSmall").src = photoDataUrl;
@@ -496,8 +499,42 @@ async function saveCurrentProposal() {
     isDirty = false;
     await rebuildSavedSelect();
     document.getElementById("savedProposalsSelect").value = currentSavedId;
+    await maybeNotifyAccepted(state);
   } catch (err) {
     alert(err.message);
+  }
+}
+
+// When a proposal is accepted, add a timestamped note to the linked client in
+// Client Tracker. Runs once per proposal (guarded by state.acceptedNoted).
+async function maybeNotifyAccepted(state) {
+  if (state.status !== "accepted" || state.acceptedNoted) return;
+  if (!state.clientId) {
+    showStatus("Accepted — link a Client Tracker client to auto-add a note.", "warn");
+    return;
+  }
+  const url = document.getElementById("ctUrl").value.trim().replace(/\/+$/, "");
+  const token = document.getElementById("ctToken").value.trim();
+  if (!url || !token) return;
+  const total = document.getElementById("previewTotal").textContent;
+  const body =
+    "Proposal " + (state.propNum || "") +
+    (state.title ? " (" + state.title + ")" : "") +
+    " accepted on " + new Date().toLocaleDateString() +
+    " — Total: " + total;
+  try {
+    const res = await fetch(url + "/api/clients/" + state.clientId + "/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ body }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    acceptedNoted = true;
+    state.acceptedNoted = true;
+    if (currentSavedId) await API.updateProposal(currentSavedId, { data: state });
+    showStatus("Note added to client in Client Tracker", "ok");
+  } catch (err) {
+    showStatus("Could not add note: " + err.message, "warn");
   }
 }
 

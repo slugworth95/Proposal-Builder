@@ -2,7 +2,7 @@
 // Serves the frontend from /public and exposes the JSON API under /api.
 const path = require("node:path");
 const express = require("express");
-const { register, login, requireAuth } = require("./auth");
+const { register, login, requireAuth, setTokenCookie, clearTokenCookie } = require("./auth");
 const proposalsRouter = require("./routes/proposals");
 const catalogRouter = require("./routes/catalog");
 
@@ -32,6 +32,7 @@ app.post("/api/auth/register", (req, res) => {
       email: String(email).trim().toLowerCase(),
       password: String(password),
     });
+    setTokenCookie(res, token);
     res.status(201).json({ user, token });
   } catch (err) {
     if (String(err.message).includes("UNIQUE")) {
@@ -51,7 +52,19 @@ app.post("/api/auth/login", (req, res) => {
     password: String(password),
   });
   if (!result) return res.status(401).json({ error: "Invalid email or password" });
+  setTokenCookie(res, result.token);
   res.json(result);
+});
+
+// Logout — clear the shared SSO session cookie
+app.post("/api/auth/logout", (req, res) => {
+  clearTokenCookie(res);
+  res.status(204).end();
+});
+
+// Who am I? — validate the current session (from header or shared cookie)
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.json({ user: req.user });
 });
 
 // Protected API

@@ -1,6 +1,7 @@
 // Proposal CRUD + version history API.
 const express = require("express");
 const db = require("../db");
+const { buildProposalPdf } = require("../pdf");
 
 const router = express.Router();
 
@@ -20,9 +21,21 @@ function serializeProposal(row) {
     clientName: row.client_name,
     propNum: row.prop_num,
     status: row.status,
+    sentAt: row.sent_at || null,
+    acceptedAt: row.accepted_at || null,
     data,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+// Compute status timestamps for a transition. Once set, they are kept for
+// history even if the status later moves back to draft.
+function statusTimestamps(existing, newStatus) {
+  const now = new Date().toISOString();
+  return {
+    sent_at: existing.sent_at || (newStatus === "sent" ? now : null),
+    accepted_at: existing.accepted_at || (newStatus === "accepted" ? now : null),
   };
 }
 
@@ -37,16 +50,20 @@ function serializeVersion(row) {
   return { id: row.id, label: row.label, data, savedAt: row.saved_at };
 }
 
-// GET /api/proposals?search= — list summaries (no full data)
+// GET /api/proposals?search=&status= — list summaries (no full data)
 router.get("/", (req, res) => {
-  const { search = "" } = req.query;
+  const { search = "", status = "" } = req.query;
   let sql =
-    "SELECT id, title, client_name, prop_num, status, created_at, updated_at FROM proposals WHERE user_id = ?";
+    "SELECT id, title, client_name, prop_num, status, sent_at, accepted_at, created_at, updated_at FROM proposals WHERE user_id = ?";
   const params = [req.user.id];
   if (search) {
     sql += " AND (title LIKE ? OR client_name LIKE ? OR prop_num LIKE ?)";
     const like = `%${search}%`;
     params.push(like, like, like);
+  }
+  if (VALID_STATUSES.includes(status)) {
+    sql += " AND status = ?";
+    params.push(status);
   }
   sql += " ORDER BY updated_at DESC";
   const rows = db.prepare(sql).all(...params);
@@ -57,6 +74,8 @@ router.get("/", (req, res) => {
       clientName: r.client_name,
       propNum: r.prop_num,
       status: r.status,
+      sentAt: r.sent_at || null,
+      acceptedAt: r.accepted_at || null,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }))
@@ -95,6 +114,43 @@ router.post("/", (req, res) => {
     .json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(Number(result.lastInsertRowid))));
 });
 
+// POST /api/proposals/pdf — generate a PDF from a data object without saving.
+// Must be registered before POST /:id so "pdf" isn't treated as an id.
+router.post("/pdf", (req, res) => {
+  const { data } = req.body || {};
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return res.status(400).json({ error: "data object is required" });
+  }
+  sendPdf(res, data);
+});
+
+// GET /api/proposals/:id/pdf — generate a PDF for a saved proposal.
+router.get("/:id/pdf", (req, res) => {
+  const row = db
+    .prepare("SELECT * FROM proposals WHERE id = ? AND user_id = ?")
+    .get(req.params.id, req.user.id);
+  if (!row) return res.status(404).json({ error: "Proposal not found" });
+  let data = {};
+  try {
+    data = JSON.parse(row.data);
+  } catch {
+    data = {};
+  }
+  sendPdf(res, data);
+});
+
+function sendPdf(res, data) {
+  const safe = String(data.propNum || "export").replace(/[^a-zA-Z0-9-_]/g, "_");
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="Proposal-${safe}.pdf"`);
+  buildProposalPdf(data)
+    .then((buf) => res.send(buf))
+    .catch((err) => {
+      console.error("PDF generation failed:", err);
+      res.status(500).json({ error: "Could not generate PDF" });
+    });
+}
+
 // PUT /api/proposals/:id — update
 router.put("/:id", (req, res) => {
   const existing = db
@@ -107,16 +163,22 @@ router.put("/:id", (req, res) => {
     return res.status(400).json({ error: "data object is required" });
   }
 
+  const newStatus = VALID_STATUSES.includes(data.status) ? data.status : existing.status;
+  const ts = statusTimestamps(existing, newStatus);
+
   db.prepare(
     `UPDATE proposals
-     SET title = ?, client_name = ?, prop_num = ?, status = ?, data = ?, updated_at = datetime('now')
+     SET title = ?, client_name = ?, prop_num = ?, status = ?, data = ?,
+         sent_at = ?, accepted_at = ?, updated_at = datetime('now')
      WHERE id = ?`
   ).run(
     data.title || null,
     data.clientName || null,
     data.propNum || null,
-    VALID_STATUSES.includes(data.status) ? data.status : existing.status,
+    newStatus,
     JSON.stringify(data),
+    ts.sent_at,
+    ts.accepted_at,
     existing.id
   );
 
@@ -145,9 +207,13 @@ router.post("/:id/status", (req, res) => {
   }
   data.status = status;
 
+  const ts = statusTimestamps(existing, status);
+
   db.prepare(
-    "UPDATE proposals SET status = ?, data = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(status, JSON.stringify(data), existing.id);
+    `UPDATE proposals
+     SET status = ?, data = ?, sent_at = ?, accepted_at = ?, updated_at = datetime('now')
+     WHERE id = ?`
+  ).run(status, JSON.stringify(data), ts.sent_at, ts.accepted_at, existing.id);
   res.json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(existing.id)));
 });
 

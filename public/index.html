@@ -67,6 +67,14 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="searchSaved" placeholder="Search saved…" oninput="rebuildSavedSelect()">
           </div>
+          <select id="statusFilter" class="status-filter" onchange="rebuildSavedSelect()">
+            <option value="">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+            <option value="invoiced">Invoiced</option>
+          </select>
           <select id="savedProposalsSelect">
             <option value="">— Saved proposals —</option>
           </select>
@@ -113,6 +121,7 @@
             <option value="declined">Declined</option>
             <option value="invoiced">Invoiced</option>
           </select>
+          <p id="statusTimeline" class="status-timeline" hidden></p>
         </div>
         <!-- Optional client/project reference fields -->
         <div class="form-row">
@@ -268,8 +277,10 @@
           </div>
         </div>
         <div class="actions">
-          <button class="btn-primary" onclick="printProposal()">🖨️ Print / Save as PDF</button>
+          <button class="btn-primary" onclick="downloadPdf()">📄 Download PDF</button>
+          <button class="btn-secondary" onclick="printProposal()">🖨️ Print</button>
           <button class="btn-email" onclick="emailProposal()">✉️ Email to Client</button>
+          <button class="btn-primary" onclick="markAsSent()">📤 Mark as Sent</button>
           <button class="btn-primary" onclick="acceptAndSchedule()">✅ Accept &amp; Schedule</button>
           <button class="btn-secondary" onclick="exportProposalJSON()">📥 Download JSON</button>
           <button class="btn-secondary" onclick="document.getElementById('importJSONInput').click()">📤 Import JSON</button>

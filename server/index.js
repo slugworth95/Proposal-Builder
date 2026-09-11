@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 
 // Health check
 app.get("/api/health", (req, res) => {
-  res.json({ service: "proposal-builder", status: "ok", version: "2.0.0" });
+  res.json({ service: "proposal-builder", status: "ok", version: "2.1.0" });
 });
 
 // Auth

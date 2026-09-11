@@ -47,10 +47,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_versions_proposal ON proposal_versions(proposal_id);
 `);
 
-// Migration: add status to proposals if the table predates this column.
+// Migration: add columns if the proposals table predates them.
 const propCols = db.prepare("PRAGMA table_info(proposals)").all().map((c) => c.name);
 if (!propCols.includes("status")) {
   db.exec("ALTER TABLE proposals ADD COLUMN status TEXT NOT NULL DEFAULT 'draft'");
+}
+if (!propCols.includes("sent_at")) {
+  db.exec("ALTER TABLE proposals ADD COLUMN sent_at TEXT");
+}
+if (!propCols.includes("accepted_at")) {
+  db.exec("ALTER TABLE proposals ADD COLUMN accepted_at TEXT");
 }
 
 module.exports = db;

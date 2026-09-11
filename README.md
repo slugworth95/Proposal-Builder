@@ -9,6 +9,7 @@ Create, manage, and send professional client proposals. A full-stack app: vanill
 - **Save & Load** — proposals persist per-user in SQLite (no more localStorage)
 - **Version History** — save multiple versions of a proposal with descriptive labels
 - **Search** — find saved proposals by title, client, or proposal number
+- **Status Filter** — narrow the saved list by status (draft / sent / accepted / declined / invoiced)
 - **Reset** — clear all fields and start fresh
 
 ### Company Branding
@@ -30,9 +31,12 @@ Create, manage, and send professional client proposals. A full-stack app: vanill
 
 ### Workflow: Accept & Schedule
 - Proposals have a status: draft / sent / accepted / declined
+- **Mark as Sent** — one-click status change to *sent* (records the sent date)
 - **Accept & Schedule** marks the proposal accepted and creates an appointment in the Scheduling Tool (port 3003) for the proposal's client — powered by the shared SSO session
+- Status timeline — sent/accepted dates are tracked per proposal and shown under the status dropdown
 
 ### Export & Sharing
+- **Download PDF** — server-side PDF generation (pdfkit, no browser needed); works for saved proposals and unsaved drafts
 - **Print / Save as PDF** — print-optimized layout
 - **Email to Client** — pre-filled email via mail client
 - **Download JSON / Import JSON** — full proposal backup and restore
@@ -69,8 +73,9 @@ Proposal-Builder/
 │   ├── index.js          # Express app: static frontend + /api routes
 │   ├── db.js             # SQLite schema (users, sessions, proposals, catalog, versions)
 │   ├── auth.js           # register/login + bearer-token middleware
+│   ├── pdf.js            # Server-side PDF rendering (pdfkit)
 │   └── routes/
-│       ├── proposals.js  # Proposal CRUD + version history
+│       ├── proposals.js  # Proposal CRUD + version history + status + PDF
 │       └── catalog.js    # Per-user product catalog
 ├── public/               # Frontend (served by Express)
 │   ├── index.html
@@ -104,10 +109,13 @@ All endpoints below require `Authorization: Bearer <token>`.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/proposals?search=` | List proposal summaries (no full data) |
-| GET | `/api/proposals/:id` | Full proposal: `{ id, title, clientName, propNum, data, createdAt, updatedAt }` |
+| GET | `/api/proposals?search=&status=` | List proposal summaries (no full data). `status` filters by draft/sent/accepted/declined/invoiced |
+| GET | `/api/proposals/:id` | Full proposal: `{ id, title, clientName, propNum, status, sentAt, acceptedAt, data, createdAt, updatedAt }` |
 | POST | `/api/proposals` | Create. Body: `{ data }` (the full proposal object) |
 | PUT | `/api/proposals/:id` | Update. Body: `{ data }` |
+| POST | `/api/proposals/:id/status` | Update just the status. Body: `{ status }` — sets `sentAt`/`acceptedAt` on first transition to sent/accepted |
+| GET | `/api/proposals/:id/pdf` | Server-generated PDF for a saved proposal (`application/pdf` download) |
+| POST | `/api/proposals/pdf` | Server-generated PDF from `{ data }` without saving (for unsaved drafts) |
 | DELETE | `/api/proposals/:id` | Delete (cascades versions) |
 
 ### Versions
@@ -178,5 +186,5 @@ The `data` object is the full form state:
 - [x] Server-side persistence with auth (replaces localStorage)
 - [x] Client Tracker integration
 - [x] JSON export/import + CSV export
-- [ ] PDF generation (server-side)
-- [ ] Proposal status tracking (draft / sent / accepted)
+- [x] PDF generation (server-side)
+- [x] Proposal status tracking (draft / sent / accepted)

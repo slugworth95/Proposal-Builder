@@ -86,6 +86,15 @@ let savedProposals = [];
 let fetchedClients = [];
 let linkedClientId = null;
 let acceptedNoted = false; // true once the acceptance note has been added in Client Tracker
+let currentProposalMeta = null; // { status, sentAt, acceptedAt } for the loaded proposal
+
+const STATUS_LABELS = {
+  draft: "Draft",
+  sent: "Sent",
+  accepted: "Accepted",
+  declined: "Declined",
+  invoiced: "Invoiced",
+};
 
 const defaultItems = [
   { label: "Standard Unit", qty: 2 },
@@ -363,10 +372,12 @@ function markDirty() {
 async function rebuildSavedSelect() {
   const select = document.getElementById("savedProposalsSelect");
   const searchInput = document.getElementById("searchSaved");
+  const statusFilter = document.getElementById("statusFilter");
   const currentVal = select.value;
   const searchVal = (searchInput ? searchInput.value : "").toLowerCase().trim();
+  const statusVal = statusFilter ? statusFilter.value : "";
   try {
-    savedProposals = await API.listProposals({ search: searchVal });
+    savedProposals = await API.listProposals({ search: searchVal, status: statusVal });
   } catch {
     savedProposals = [];
   }
@@ -384,7 +395,8 @@ async function rebuildSavedSelect() {
       month: "short", day: "numeric", year: "2-digit",
     });
     const label = p.title || (p.propNum ? p.propNum + " - " : "Proposal - ") + (p.clientName || "No client");
-    opt.textContent = searchVal ? label + " (" + date + ") 🔍" : label + " (" + date + ")";
+    const statusTag = STATUS_LABELS[p.status] ? " · " + STATUS_LABELS[p.status] : "";
+    opt.textContent = searchVal ? label + " (" + date + ")" + statusTag + " 🔍" : label + " (" + date + ")" + statusTag;
     select.appendChild(opt);
   });
   const availableValues = [...select.options].map((o) => o.value).filter(Boolean);
@@ -488,12 +500,14 @@ async function saveCurrentProposal() {
   const state = gatherFormState();
   try {
     if (currentSavedId) {
-      await API.updateProposal(currentSavedId, { data: state });
+      const updated = await API.updateProposal(currentSavedId, { data: state });
+      setProposalMeta({ status: updated.status, sentAt: updated.sentAt, acceptedAt: updated.acceptedAt });
       showStatus("Proposal updated!", "ok");
     } else {
       const created = await API.createProposal({ data: state });
       currentSavedId = created.id;
       versions = [];
+      setProposalMeta({ status: created.status, sentAt: created.sentAt, acceptedAt: created.acceptedAt });
       showStatus("Proposal saved!", "ok");
     }
     isDirty = false;
@@ -547,6 +561,7 @@ async function loadSelectedProposal() {
     const full = await API.getProposal(id);
     applyFormState(full.data);
     currentSavedId = id;
+    setProposalMeta({ status: full.status, sentAt: full.sentAt, acceptedAt: full.acceptedAt });
     await loadVersions();
     showStatus("Proposal loaded!", "ok");
   } catch (err) {
@@ -564,6 +579,7 @@ async function deleteSelectedProposal() {
     if (currentSavedId === id) {
       currentSavedId = null;
       versions = [];
+      setProposalMeta(null);
       document.getElementById("versionBar").style.display = "none";
     }
     await rebuildSavedSelect();
@@ -585,6 +601,67 @@ function showStatus(msg, type) {
   statusEl.textContent = msg;
   statusEl.className = "save-status " + (type || "ok");
   setTimeout(() => updateSaveStatus(), 3000);
+}
+
+// ═══════════════════════════════════════════════
+// STATUS TRACKING
+// ═══════════════════════════════════════════════
+function setProposalMeta(meta) {
+  currentProposalMeta = meta || null;
+  renderStatusTimeline();
+}
+
+function renderStatusTimeline() {
+  const el = document.getElementById("statusTimeline");
+  if (!el) return;
+  const meta = currentProposalMeta;
+  const parts = [];
+  if (meta && meta.sentAt) {
+    parts.push("Sent " + new Date(meta.sentAt).toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+    }));
+  }
+  if (meta && meta.acceptedAt) {
+    parts.push("Accepted " + new Date(meta.acceptedAt).toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+    }));
+  }
+  if (parts.length > 0) {
+    el.textContent = parts.join(" · ");
+    el.hidden = false;
+  } else {
+    el.textContent = "";
+    el.hidden = true;
+  }
+}
+
+// Download a server-generated PDF. Uses the saved copy when available,
+// otherwise generates from the current form state.
+async function downloadPdf() {
+  const state = gatherFormState();
+  try {
+    const blob = currentSavedId
+      ? await API.downloadProposalPdf(currentSavedId)
+      : await API.generateProposalPdf(state);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Proposal-" + (state.propNum || "export").replace(/[^a-zA-Z0-9-_]/g, "_") + ".pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+    showStatus("PDF downloaded!", "ok");
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// Quick action: mark the proposal as sent and save it.
+async function markAsSent() {
+  document.getElementById("proposalStatus").value = "sent";
+  markDirty();
+  updatePreview();
+  await saveCurrentProposal();
+  showStatus("Proposal marked as sent.", "ok");
 }
 
 // ═══════════════════════════════════════════════
@@ -616,6 +693,7 @@ function importProposalJSON(event) {
       }
       applyFormState(state);
       currentSavedId = null;
+      setProposalMeta(null);
       document.getElementById("savedProposalsSelect").value = "";
       showStatus("Proposal imported from file!", "ok");
     } catch {
@@ -1254,6 +1332,7 @@ function resetProposal() {
   itemIdCounter = 0;
   currentSavedId = null;
   linkedClientId = null;
+  setProposalMeta(null);
   versions = [];
   document.getElementById("versionBar").style.display = "none";
   document.getElementById("savedProposalsSelect").value = "";
@@ -1327,6 +1406,7 @@ async function init() {
       const full = await API.getProposal(proposalParam);
       applyFormState(full.data);
       currentSavedId = full.id;
+      setProposalMeta({ status: full.status, sentAt: full.sentAt, acceptedAt: full.acceptedAt });
       await loadVersions();
       showStatus("Proposal loaded from link!", "ok");
     } catch {

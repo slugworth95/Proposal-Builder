@@ -74,6 +74,7 @@ const API = {
   listProposals(params = {}) {
     const qs = new URLSearchParams();
     if (params.search) qs.set("search", params.search);
+    if (params.status) qs.set("status", params.status);
     const q = qs.toString();
     return this.request(`/api/proposals${q ? `?${q}` : ""}`);
   },
@@ -92,6 +93,33 @@ const API = {
 
   deleteProposal(id) {
     return this.request(`/api/proposals/${id}`, { method: "DELETE" });
+  },
+
+  // PDF (server-side generation)
+  async requestBlob(path, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (this.token) headers.Authorization = `Bearer ${this.token}`;
+    const res = await fetch(path, { ...options, headers });
+    if (res.status === 401) {
+      this.setToken(null);
+      throw new ApiError(401, "Session expired. Please sign in again.");
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new ApiError(res.status, (data && data.error) || `Request failed (${res.status})`);
+    }
+    return res.blob();
+  },
+
+  downloadProposalPdf(id) {
+    return this.requestBlob(`/api/proposals/${id}/pdf`);
+  },
+
+  generateProposalPdf(data) {
+    return this.requestBlob("/api/proposals/pdf", {
+      method: "POST",
+      body: JSON.stringify({ data }),
+    });
   },
 
   // Versions

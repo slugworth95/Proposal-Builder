@@ -45,7 +45,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_proposals_user ON proposals(user_id);
   CREATE INDEX IF NOT EXISTS idx_catalog_user ON catalog_items(user_id);
   CREATE INDEX IF NOT EXISTS idx_versions_proposal ON proposal_versions(proposal_id);
-  CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 `);
 
 // Migration: add status to proposals if the table predates this column.

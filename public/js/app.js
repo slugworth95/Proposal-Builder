@@ -644,8 +644,9 @@ function exportProposalCSV() {
 function loadTrackerSettings() {
   document.getElementById("ctUrl").value =
     localStorage.getItem("proposal-builder.ctUrl") || "http://localhost:3000";
+  // Auto-fill the token from the shared SSO cookie (current session first).
   document.getElementById("ctToken").value =
-    localStorage.getItem("proposal-builder.ctToken") || "";
+    getCookie("slugworth_token") || localStorage.getItem("proposal-builder.ctToken") || "";
   document.getElementById("schedulerUrl").value =
     localStorage.getItem("proposal-builder.schedulerUrl") || "http://localhost:3003";
 }
@@ -732,6 +733,8 @@ document.getElementById("schedule-form").addEventListener("submit", async (event
     durationMin: Number(document.getElementById("sched-duration").value),
     notes: "From proposal " + (state.propNum || "") + (state.title ? " — " + state.title : ""),
     clientId: state.clientId || null,
+    proposalId: currentSavedId,
+    proposalUrl: window.location.origin,
   };
   try {
     const res = await fetch(url + "/api/appointments", {
@@ -1277,6 +1280,22 @@ async function init() {
   }
   updatePreview();
   markDirty();
+
+  // Deep link: ?proposal=<id> loads that proposal (used by the Scheduling Tool's
+  // "Open Proposal" link).
+  const params = new URLSearchParams(window.location.search);
+  const proposalParam = params.get("proposal");
+  if (proposalParam) {
+    try {
+      const full = await API.getProposal(proposalParam);
+      applyFormState(full.data);
+      currentSavedId = full.id;
+      await loadVersions();
+      showStatus("Proposal loaded from link!", "ok");
+    } catch {
+      showStatus("Could not load linked proposal.", "warn");
+    }
+  }
 }
 
 // ─── Boot ───

@@ -4,7 +4,7 @@ const db = require("../db");
 
 const router = express.Router();
 
-const VALID_STATUSES = ["draft", "sent", "accepted", "declined"];
+const VALID_STATUSES = ["draft", "sent", "accepted", "declined", "invoiced"];
 
 function serializeProposal(row) {
   if (!row) return null;
@@ -120,6 +120,34 @@ router.put("/:id", (req, res) => {
     existing.id
   );
 
+  res.json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(existing.id)));
+});
+
+// POST /api/proposals/:id/status — update just the status (used by other tools
+// in the workflow, e.g. Scheduling Tool marks a proposal "invoiced").
+router.post("/:id/status", (req, res) => {
+  const existing = db
+    .prepare("SELECT * FROM proposals WHERE id = ? AND user_id = ?")
+    .get(req.params.id, req.user.id);
+  if (!existing) return res.status(404).json({ error: "Proposal not found" });
+
+  const { status } = req.body || {};
+  if (!VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
+  }
+
+  // Keep the data blob's status in sync with the column.
+  let data = {};
+  try {
+    data = JSON.parse(existing.data);
+  } catch {
+    data = {};
+  }
+  data.status = status;
+
+  db.prepare(
+    "UPDATE proposals SET status = ?, data = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(status, JSON.stringify(data), existing.id);
   res.json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(existing.id)));
 });
 

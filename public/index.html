@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposal Builder</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <div class="logo-icon">📝</div>
+    <h1>Proposal Builder</h1>
+    <span>Create professional client proposals in minutes</span>
+  </header>
+
+  <!-- Auth view -->
+  <main id="auth-view" class="auth-container" hidden>
+    <section class="auth-card">
+      <h2 id="auth-title">Sign In</h2>
+      <form id="auth-form">
+        <label id="name-label" for="auth-name" hidden>Name</label>
+        <input type="text" id="auth-name" placeholder="Your name" hidden />
+        <label for="auth-email">Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" required />
+        <label for="auth-password">Password</label>
+        <input type="password" id="auth-password" placeholder="At least 8 characters" required />
+        <button type="submit" id="auth-submit" class="btn-primary">Sign In</button>
+      </form>
+      <p id="auth-status" class="auth-status" hidden></p>
+      <p class="switch">
+        <button type="button" id="auth-toggle" class="link-button">Create an account</button>
+      </p>
+    </section>
+  </main>
+
+  <!-- App view -->
+  <div id="app-view" hidden>
+    <div class="app-toolbar">
+      <span class="app-toolbar-title">Proposal Builder</span>
+      <button type="button" id="logout-button" class="btn-secondary">Sign out</button>
+    </div>
+    <div class="builder">
+      <!-- ===== LEFT: FORM ===== -->
+      <div class="form-panel">
+        <h2>Proposal Details</h2>
+        <!-- ─── Company Info ─── -->
+        <div class="form-section">
+          <h3>Your Company</h3>
+          <div class="form-group">
+            <label>Company Name</label>
+            <input type="text" id="companyName" value="Your Company Name" oninput="markDirty(); updatePreview()">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tagline <span style="font-weight:400;text-transform:none;color:#999;">(optional)</span></label>
+              <input type="text" id="companyTagline" placeholder="e.g. Quality Service Since 2010" oninput="markDirty(); updatePreview()">
+            </div>
+            <div class="form-group">
+              <label>Company Address <span style="font-weight:400;text-transform:none;color:#999;">(optional)</span></label>
+              <input type="text" id="companyAddress" placeholder="e.g. 123 Main St, Anytown, ST 00000" oninput="markDirty(); updatePreview()">
+            </div>
+          </div>
+        </div>
+        <!-- ─── Save / Load / Search Bar ─── -->
+        <div class="save-load-bar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchSaved" placeholder="Search saved…" oninput="rebuildSavedSelect()">
+          </div>
+          <select id="savedProposalsSelect">
+            <option value="">— Saved proposals —</option>
+          </select>
+          <button class="btn-save" onclick="saveCurrentProposal()">💾 Save</button>
+          <button class="btn-load" onclick="loadSelectedProposal()">📂 Load</button>
+          <button class="btn-delete-saved" onclick="deleteSelectedProposal()">🗑️</button>
+        </div>
+        <!-- ─── Version History ─── -->
+        <div class="version-bar" id="versionBar" style="display:none;">
+          <span class="version-label">📜 Versions</span>
+          <select id="versionSelect" onchange="restoreVersion(this.value)"></select>
+          <button onclick="saveVersionManually()">+ Save Version</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rep Name</label>
+            <input type="text" id="repName" value="Your Name" oninput="markDirty(); updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Rep Phone</label>
+            <input type="text" id="repPhone" value="(555) 123-4567" oninput="markDirty(); updatePreview()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Rep Email</label>
+          <input type="email" id="repEmail" value="you@yourcompany.com" oninput="markDirty(); updatePreview()">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Proposal Number</label>
+            <input type="text" id="propNum" value="PROP-0001" oninput="markDirty(); updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Proposal Name (for saved list)</label>
+            <input type="text" id="proposalTitle" placeholder="e.g. Henderson Project" oninput="markDirty(); updatePreview()">
+          </div>
+        </div>
+        <!-- Optional client/project reference fields -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>License / Certification # <span style="font-weight:400;text-transform:none;color:#999;">(optional)</span></label>
+            <input type="text" id="builderLicense" placeholder="e.g. LIC123456" oninput="markDirty(); updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Project Name</label>
+            <input type="text" id="projectName" placeholder="e.g. Oak Street Project" oninput="markDirty(); updatePreview()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Delivery / Service Address <span style="font-weight:400;text-transform:none;color:#999;">(if different from project address)</span></label>
+          <input type="text" id="jobsiteAddress" placeholder="e.g. 456 Example Ave, Anytown, ST" oninput="markDirty(); updatePreview()">
+        </div>
+        <div class="form-group">
+          <label>Discount Tier <span style="font-weight:400;text-transform:none;color:#999;">(volume/partner pricing level)</span></label>
+          <select id="discountTier" onchange="markDirty(); updatePreview()">
+            <option value="Standard">Standard (List Price)</option>
+            <option value="Tier 1">Tier 1 — Volume Builder (5% off)</option>
+            <option value="Tier 2">Tier 2 — Preferred Partner (10% off)</option>
+            <option value="Tier 3">Tier 3 — Strategic Partner (15% off)</option>
+            <option value="Custom">Custom Discount</option>
+          </select>
+        </div>
+        <div class="form-group" id="customDiscountGroup" style="display:none;">
+          <label>Custom Discount %</label>
+          <input type="number" id="customDiscountPct" min="0" max="100" step="0.1" value="0" oninput="markDirty(); updatePreview()">
+        </div>
+        <div class="form-group">
+          <label>Client Email (for sending)</label>
+          <input type="email" id="clientEmail" placeholder="client@example.com" oninput="markDirty()">
+        </div>
+        <!-- Payment terms + Lead time -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Payment Terms</label>
+            <select id="paymentTerms" onchange="markDirty(); updatePreview()">
+              <option value="50% deposit due at signing, balance due on completion.">50% Deposit / 50% on Completion</option>
+              <option value="Net 30 — Full payment due within 30 days of invoice.">Net 30</option>
+              <option value="Net 60 — Full payment due within 60 days of invoice.">Net 60</option>
+              <option value="100% due upon delivery.">100% Due Upon Delivery</option>
+              <option value="Custom terms — see notes below.">Custom Terms</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estimated Completion / Lead Time</label>
+            <input type="text" id="leadTime" placeholder="e.g. 4-6 weeks from deposit" oninput="markDirty(); updatePreview()">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Client Name</label>
+            <input type="text" id="clientName" placeholder="e.g. The Hendersons" oninput="markDirty(); updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Project Address</label>
+            <input type="text" id="projectAddress" placeholder="e.g. 123 Main St, Anytown, ST" oninput="markDirty(); updatePreview()">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valid Until</label>
+            <input type="date" id="validUntil" oninput="markDirty(); updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Project Type</label>
+            <input type="text" id="projectType" placeholder="e.g. Installation, Consulting, Full Project" value="Product & Service Delivery" oninput="markDirty(); updatePreview()">
+          </div>
+        </div>
+        <!-- ─── Client Tracker Integration ─── -->
+        <div class="form-section">
+          <h3>🔗 Client Tracker Integration</h3>
+          <p style="font-size:0.78rem;color:#777;margin-bottom:0.5rem;">
+            Pull a client from your Client Tracker app to auto-fill the proposal.
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Client Tracker URL</label>
+              <input type="text" id="ctUrl" placeholder="http://localhost:3000">
+            </div>
+            <div class="form-group">
+              <label>Client Tracker API Token</label>
+              <input type="password" id="ctToken" placeholder="Paste your Client Tracker token">
+            </div>
+          </div>
+          <button type="button" class="btn-secondary" onclick="fetchClientsFromTracker()">🔗 Fetch Clients</button>
+          <select id="ctClientSelect" style="margin-top:0.5rem;width:100%;" onchange="applyTrackerClient()">
+            <option value="">— Select a client —</option>
+          </select>
+        </div>
+        <div class="form-section">
+          <h3>Project Photo</h3>
+          <div class="photo-upload-wrapper">
+            <input type="file" id="photoInput" accept="image/*" onchange="markDirty(); handlePhoto(event)">
+            <img class="photo-preview" id="photoPreviewSmall" alt="">
+            <div class="photo-placeholder" id="photoPlaceholderSmall">No photo</div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>Line Items</h3>
+          <p style="font-size:0.78rem;color:#777;margin-bottom:0.5rem;">
+            Pick a product from the dropdown, or select "Custom item" and type your own description.
+          </p>
+          <div class="line-items" id="lineItemsContainer"></div>
+          <button class="add-item-btn" onclick="addLineItem()">+ Add line item</button>
+        </div>
+        <!-- ─── Product Catalog Editor ─── -->
+        <div class="form-section">
+          <h3 style="display:flex;align-items:center;gap:0.5rem;">
+            Product Catalog
+            <span style="font-size:0.7rem;font-weight:400;color:#888;" id="catalogCountBadge"></span>
+          </h3>
+          <div class="catalog-editor">
+            <div class="catalog-editor-header" onclick="toggleCatalogEditor()">
+              <span>📦 Manage Products</span>
+              <span class="arrow" id="catalogArrow">▶</span>
+            </div>
+            <div class="catalog-editor-body" id="catalogEditorBody">
+              <input type="text" id="catalogSearch" class="catalog-search"
+                     placeholder="Search products…" oninput="renderCatalogTable()">
+              <table class="catalog-table">
+                <thead>
+                  <tr><th>Product</th><th>Category</th><th style="text-align:right;">Price</th><th></th></tr>
+                </thead>
+                <tbody id="catalogTableBody"></tbody>
+              </table>
+              <div class="catalog-add-row">
+                <input type="text" id="newCatName" placeholder="Product name…">
+                <select id="newCatCategory">
+                  <option value="Product">Product</option>
+                  <option value="Service">Service</option>
+                  <option value="Labor">Labor</option>
+                  <option value="Custom">Custom</option>
+                </select>
+                <input type="number" id="newCatPrice" placeholder="Price" min="0" step="0.01">
+                <button onclick="addCatalogItem()">+ Add</button>
+                <button class="catalog-reset-btn" onclick="resetCatalogToDefaults()">Reset defaults</button>
+              </div>
+              <div class="catalog-count" id="catalogCountText"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>Notes & Terms</h3>
+          <div class="form-group">
+            <textarea id="notesTerms" oninput="markDirty(); updatePreview()">50% deposit due at signing, balance due on completion. Standard warranty applies to all products and services provided.</textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn-primary" onclick="printProposal()">🖨️ Print / Save as PDF</button>
+          <button class="btn-email" onclick="emailProposal()">✉️ Email to Client</button>
+          <button class="btn-secondary" onclick="exportProposalJSON()">📥 Download JSON</button>
+          <button class="btn-secondary" onclick="document.getElementById('importJSONInput').click()">📤 Import JSON</button>
+          <input type="file" id="importJSONInput" accept=".json" style="display:none" onchange="importProposalJSON(event)">
+          <button class="btn-secondary" onclick="exportProposalCSV()">📊 Export CSV</button>
+          <button class="btn-secondary" onclick="resetProposal()">↺ Reset</button>
+        </div>
+      </div>
+      <!-- ===== RIGHT: PREVIEW ===== -->
+      <div class="preview-panel" id="previewPanel">
+        <div class="preview-paper" id="previewPaper">
+          <div class="preview-header">
+            <div class="company">
+              <div class="icon icon-initials" id="previewIcon">YC</div>
+              <div>
+                <div class="company-name" id="previewCompanyName">Your Company Name</div>
+                <div class="company-tagline" id="previewTagline" style="display:none;"></div>
+                <div class="company-contact" id="previewRep">Your Name · (555) 123-4567 · you@yourcompany.com</div>
+              </div>
+            </div>
+            <div class="prop-num" id="previewPropNum">PROP-0001</div>
+          </div>
+          <div class="preview-title">Project Proposal</div>
+          <div class="preview-client" id="previewClient">
+            <strong>Prepared for</strong> — <span id="previewClientName">Client</span> · <span id="previewAddress">Address</span>
+          </div>
+          <div id="previewBuilderInfo" style="font-size:0.8rem;color:#555;margin-bottom:0.8rem;padding:0.4rem 0.6rem;background:#f6f8fa;border-radius:4px;display:none;"></div>
+          <img class="preview-photo" id="previewPhoto" alt="Project photo">
+          <div class="preview-photo-placeholder" id="previewPhotoPlaceholder">📷 Project photo</div>
+          <div class="preview-section-title">Scope of work · <span id="previewProjectType">Product & Service Delivery</span></div>
+          <table class="preview-table">
+            <thead>
+              <tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
+            </thead>
+            <tbody id="previewTableBody"></tbody>
+          </table>
+          <div class="preview-totals">
+            <div class="row"><span>Subtotal</span><span id="previewSubtotal">$0</span></div>
+            <div class="row"><span>Discount (<span id="previewDiscountLabel">0%</span>)</span><span id="previewDiscount">$0</span></div>
+            <div class="row"><span>Estimated Tax (7%)</span><span id="previewTax">$0</span></div>
+            <div class="row total"><span>Total</span><span id="previewTotal">$0</span></div>
+          </div>
+          <div class="preview-notes" id="previewNotes">50% deposit due at signing, balance due on completion. Standard warranty applies to all products and services provided.</div>
+          <div class="preview-footer">
+            <div>
+              Prepared by <span id="previewFooterCompany">Your Company Name</span><br>
+              <span class="valid-until" id="previewValidUntil">Valid until —</span>
+              <br><span id="previewLeadTime" style="color:#555;"></span>
+            </div>
+            <div class="sig-line">
+              Client signature<br>
+              <span class="line"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

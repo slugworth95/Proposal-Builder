@@ -418,6 +418,7 @@ function gatherFormState() {
     repEmail: document.getElementById("repEmail").value,
     propNum: document.getElementById("propNum").value,
     title: document.getElementById("proposalTitle").value,
+    status: document.getElementById("proposalStatus").value,
     clientEmail: document.getElementById("clientEmail").value,
     clientName: document.getElementById("clientName").value,
     projectAddress: document.getElementById("projectAddress").value,
@@ -446,6 +447,7 @@ function applyFormState(state) {
   document.getElementById("repEmail").value = state.repEmail || "";
   document.getElementById("propNum").value = state.propNum || "";
   document.getElementById("proposalTitle").value = state.title || "";
+  document.getElementById("proposalStatus").value = state.status || "draft";
   document.getElementById("clientEmail").value = state.clientEmail || "";
   document.getElementById("clientName").value = state.clientName || "";
   document.getElementById("projectAddress").value = state.projectAddress || "";
@@ -644,6 +646,8 @@ function loadTrackerSettings() {
     localStorage.getItem("proposal-builder.ctUrl") || "http://localhost:3000";
   document.getElementById("ctToken").value =
     localStorage.getItem("proposal-builder.ctToken") || "";
+  document.getElementById("schedulerUrl").value =
+    localStorage.getItem("proposal-builder.schedulerUrl") || "http://localhost:3003";
 }
 
 async function fetchClientsFromTracker() {
@@ -693,6 +697,61 @@ function applyTrackerClient() {
   updatePreview();
   showStatus('Client "' + client.name + '" applied to proposal', "ok");
 }
+
+// ═══════════════════════════════════════════════
+// WORKFLOW: ACCEPT & SCHEDULE
+// ═══════════════════════════════════════════════
+async function acceptAndSchedule() {
+  document.getElementById("proposalStatus").value = "accepted";
+  markDirty();
+  updatePreview();
+  await saveCurrentProposal();
+  const t = new Date();
+  t.setDate(t.getDate() + 1);
+  document.getElementById("sched-date").value =
+    t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+  document.getElementById("sched-time").value = "09:00";
+  document.getElementById("schedule-dialog").showModal();
+}
+
+document.getElementById("schedule-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const url = document.getElementById("schedulerUrl").value.trim().replace(/\/+$/, "");
+  const token = API.token;
+  if (!url || !token) {
+    alert("Enter the Scheduling Tool URL and make sure you're signed in.");
+    return;
+  }
+  localStorage.setItem("proposal-builder.schedulerUrl", url);
+  const state = gatherFormState();
+  const payload = {
+    clientName: state.clientName || "Client",
+    clientEmail: state.clientEmail || null,
+    date: document.getElementById("sched-date").value,
+    time: document.getElementById("sched-time").value,
+    durationMin: Number(document.getElementById("sched-duration").value),
+    notes: "From proposal " + (state.propNum || "") + (state.title ? " — " + state.title : ""),
+    clientId: state.clientId || null,
+  };
+  try {
+    const res = await fetch(url + "/api/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && data.error) || "HTTP " + res.status);
+    document.getElementById("schedule-dialog").close();
+    alert("Appointment created for " + payload.clientName + " on " + payload.date + " at " + payload.time + ".");
+    if (confirm("Open the Scheduling Tool?")) window.open(url, "_blank");
+  } catch (err) {
+    alert("Could not create appointment: " + err.message);
+  }
+});
+
+document.getElementById("sched-cancel").addEventListener("click", () => {
+  document.getElementById("schedule-dialog").close();
+});
 
 // ═══════════════════════════════════════════════
 // EMAIL (mailto:)

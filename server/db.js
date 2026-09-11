@@ -18,6 +18,7 @@ db.exec(`
     title TEXT,
     client_name TEXT,
     prop_num TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
     data TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -46,5 +47,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_versions_proposal ON proposal_versions(proposal_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 `);
+
+// Migration: add status to proposals if the table predates this column.
+const propCols = db.prepare("PRAGMA table_info(proposals)").all().map((c) => c.name);
+if (!propCols.includes("status")) {
+  db.exec("ALTER TABLE proposals ADD COLUMN status TEXT NOT NULL DEFAULT 'draft'");
+}
 
 module.exports = db;

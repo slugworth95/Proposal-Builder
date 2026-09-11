@@ -4,6 +4,8 @@ const db = require("../db");
 
 const router = express.Router();
 
+const VALID_STATUSES = ["draft", "sent", "accepted", "declined"];
+
 function serializeProposal(row) {
   if (!row) return null;
   let data = {};
@@ -17,6 +19,7 @@ function serializeProposal(row) {
     title: row.title,
     clientName: row.client_name,
     propNum: row.prop_num,
+    status: row.status,
     data,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -38,7 +41,7 @@ function serializeVersion(row) {
 router.get("/", (req, res) => {
   const { search = "" } = req.query;
   let sql =
-    "SELECT id, title, client_name, prop_num, created_at, updated_at FROM proposals WHERE user_id = ?";
+    "SELECT id, title, client_name, prop_num, status, created_at, updated_at FROM proposals WHERE user_id = ?";
   const params = [req.user.id];
   if (search) {
     sql += " AND (title LIKE ? OR client_name LIKE ? OR prop_num LIKE ?)";
@@ -53,6 +56,7 @@ router.get("/", (req, res) => {
       title: r.title,
       clientName: r.client_name,
       propNum: r.prop_num,
+      status: r.status,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }))
@@ -76,13 +80,14 @@ router.post("/", (req, res) => {
   }
   const result = db
     .prepare(
-      "INSERT INTO proposals (user_id, title, client_name, prop_num, data) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO proposals (user_id, title, client_name, prop_num, status, data) VALUES (?, ?, ?, ?, ?, ?)"
     )
     .run(
       req.user.id,
       data.title || null,
       data.clientName || null,
       data.propNum || null,
+      VALID_STATUSES.includes(data.status) ? data.status : "draft",
       JSON.stringify(data)
     );
   res
@@ -104,9 +109,16 @@ router.put("/:id", (req, res) => {
 
   db.prepare(
     `UPDATE proposals
-     SET title = ?, client_name = ?, prop_num = ?, data = ?, updated_at = datetime('now')
+     SET title = ?, client_name = ?, prop_num = ?, status = ?, data = ?, updated_at = datetime('now')
      WHERE id = ?`
-  ).run(data.title || null, data.clientName || null, data.propNum || null, JSON.stringify(data), existing.id);
+  ).run(
+    data.title || null,
+    data.clientName || null,
+    data.propNum || null,
+    VALID_STATUSES.includes(data.status) ? data.status : existing.status,
+    JSON.stringify(data),
+    existing.id
+  );
 
   res.json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(existing.id)));
 });

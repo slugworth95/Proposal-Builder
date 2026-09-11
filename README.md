@@ -28,6 +28,10 @@ Create, manage, and send professional client proposals. A full-stack app: vanill
 ### Client Tracker Integration
 - Paste your Client Tracker URL + API token, click **Fetch Clients**, pick a client, and the proposal auto-fills client name, email, and company — the linked client id is stored on the proposal
 
+### Workflow: Accept & Schedule
+- Proposals have a status: draft / sent / accepted / declined
+- **Accept & Schedule** marks the proposal accepted and creates an appointment in the Scheduling Tool (port 3003) for the proposal's client — powered by the shared SSO session
+
 ### Export & Sharing
 - **Print / Save as PDF** — print-optimized layout
 - **Email to Client** — pre-filled email via mail client
@@ -36,6 +40,10 @@ Create, manage, and send professional client proposals. A full-stack app: vanill
 
 ### Presentation
 - Project photo, client signature field, valid-until date, estimated completion / lead time
+
+## Shared sign-on (SSO)
+
+All four tools share one login. Users and sessions live in a shared database (`~/.slugworth/auth.db`, override with `SLUGWORTH_DB_PATH`), and the session token is stored in a shared `slugworth_token` cookie on `localhost` — cookies are shared across ports, so signing in on any tool signs you into all of them. Each server accepts the token from the `Authorization` header or the cookie.
 
 ## Run locally
 

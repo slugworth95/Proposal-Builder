@@ -648,3 +648,15 @@ header a { color: #c9a84c; text-decoration: none; font-weight: 600; }
   white-space: nowrap;
 }
 .version-bar button:hover { opacity: 0.85; }
+
+/* ─── Dialog ─── */
+dialog {
+  border: 1px solid #d8e0e8;
+  border-radius: 10px;
+  padding: 1.5rem;
+  width: min(460px, 92vw);
+}
+dialog::backdrop { background: rgba(0,0,0,0.35); }
+dialog h2 { font-size: 1.1rem; color: #0a2e4a; margin-bottom: 0.5rem; border-bottom: 2px solid #c9a84c; padding-bottom: 0.5rem; }
+.dialog-hint { font-size: 0.8rem; color: #777; margin-bottom: 0.75rem; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }

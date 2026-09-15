@@ -188,3 +188,5 @@ The `data` object is the full form state:
 - [x] JSON export/import + CSV export
 - [x] PDF generation (server-side)
 - [x] Proposal status tracking (draft / sent / accepted)
+
+> **SUPERSEDED** — This tool has been merged into Slugworth Suite (one app: clients, proposals, invoices, scheduling). This repo is archived for reference. See the pre-merge-2026-09-11 tag for the final standalone state.

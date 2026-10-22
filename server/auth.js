@@ -3,7 +3,7 @@
 // users + sessions live in ONE shared database (default ~/.slugworth/auth.db)
 // so a single login works across Client-Tracker, Proposal-Builder,
 // Invoice-Generator, and Scheduling-Tool. The session token is also stored in a
-// shared `slugworth_token` cookie on localhost — cookies are shared across ports
+// shared `slugworth_token` cookie on localhost: cookies are shared across ports
 // on the same host, so logging in on any tool authenticates all of them.
 //
 // Override the shared DB path with the SLUGWORTH_DB_PATH env var.

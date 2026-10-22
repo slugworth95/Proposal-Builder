@@ -1,4 +1,4 @@
-// Proposal Builder — UI logic.
+// Proposal Builder: UI logic.
 // Adapted from the reference single-file app: localStorage replaced with the
 // Proposal Builder API, plus auth, Client Tracker integration, and CSV export.
 
@@ -381,7 +381,7 @@ async function rebuildSavedSelect() {
   } catch {
     savedProposals = [];
   }
-  select.innerHTML = '<option value="">— Saved proposals —</option>';
+  select.innerHTML = '<option value="">- Saved proposals -</option>';
   if (searchVal && savedProposals.length === 0) {
     const opt = document.createElement("option");
     opt.disabled = true;
@@ -524,7 +524,7 @@ async function saveCurrentProposal() {
 async function maybeNotifyAccepted(state) {
   if (state.status !== "accepted" || state.acceptedNoted) return;
   if (!state.clientId) {
-    showStatus("Accepted — link a Client Tracker client to auto-add a note.", "warn");
+    showStatus("Accepted: link a Client Tracker client to auto-add a note.", "warn");
     return;
   }
   const url = document.getElementById("ctUrl").value.trim().replace(/\/+$/, "");
@@ -535,7 +535,7 @@ async function maybeNotifyAccepted(state) {
     "Proposal " + (state.propNum || "") +
     (state.title ? " (" + state.title + ")" : "") +
     " accepted on " + new Date().toLocaleDateString() +
-    " — Total: " + total;
+    ", Total: " + total;
   try {
     const res = await fetch(url + "/api/clients/" + state.clientId + "/notes", {
       method: "POST",
@@ -783,7 +783,7 @@ async function fetchClientsFromTracker() {
     fetchedClients = await res.json();
     const select = document.getElementById("ctClientSelect");
     select.innerHTML =
-      '<option value="">— Select a client —</option>' +
+      '<option value="">- Select a client -</option>' +
       fetchedClients
         .map(
           (c) =>
@@ -846,7 +846,7 @@ document.getElementById("schedule-form").addEventListener("submit", async (event
     date: document.getElementById("sched-date").value,
     time: document.getElementById("sched-time").value,
     durationMin: Number(document.getElementById("sched-duration").value),
-    notes: "From proposal " + (state.propNum || "") + (state.title ? " — " + state.title : ""),
+    notes: "From proposal " + (state.propNum || "") + (state.title ? ", " + state.title : ""),
     clientId: state.clientId || null,
     proposalId: currentSavedId,
     proposalUrl: window.location.origin,
@@ -901,15 +901,15 @@ function emailProposal() {
   lineItems.forEach((item, i) => {
     const desc = item.label || "(custom item)";
     const supplyOnly = item.supplyOnly ? " [Supply Only]" : "";
-    const specNote = item.specNotes ? " — " + item.specNotes : "";
-    linesText += (i + 1) + ". " + desc + specNote + supplyOnly + " — " + item.qty + " x $" + item.price.toFixed(2) + " = $" + (item.qty * item.price).toFixed(2) + "\n";
+    const specNote = item.specNotes ? ", " + item.specNotes : "";
+    linesText += (i + 1) + ". " + desc + specNote + supplyOnly + ", " + item.qty + " x $" + item.price.toFixed(2) + " = $" + (item.qty * item.price).toFixed(2) + "\n";
   });
   let extraInfo = "";
   if (projectName) extraInfo += "\nProject Name: " + projectName;
   if (jobsite) extraInfo += "\nJob Site: " + jobsite;
   if (builderLicense) extraInfo += "\nLicense/Certification: " + builderLicense;
   if (leadTime) extraInfo += "\nLead Time: " + leadTime;
-  const subject = encodeURIComponent("Project Proposal " + propNum + " — " + companyName);
+  const subject = encodeURIComponent("Project Proposal " + propNum + ", " + companyName);
   const body = encodeURIComponent(
     "Hi " + clientName + ",\n\n" +
     "Please find your project proposal below from " + companyName + ".\n\n" +
@@ -1004,7 +1004,7 @@ function renderLineItems() {
     const div = document.createElement("div");
     div.className = "line-item";
     div.dataset.id = item.id;
-    let optionsHtml = '<option value="">— Type custom below —</option>';
+    let optionsHtml = '<option value="">- Type custom below -</option>';
     PRODUCT_CATALOG.forEach((p) => {
       const selected = p.label === item.label ? "selected" : "";
       optionsHtml += '<option value="' + escAttr(p.label) + '" ' + selected + ">" + escHtml(p.label) + " ($" + p.price + ")</option>";
@@ -1193,7 +1193,7 @@ function updatePreview() {
     document.getElementById("previewValidUntil").textContent =
       "Valid until " + d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   } else {
-    document.getElementById("previewValidUntil").textContent = "Valid until —";
+    document.getElementById("previewValidUntil").textContent = "Valid until -";
   }
   const paymentTerms = document.getElementById("paymentTerms").value;
   const leadTime = document.getElementById("leadTime").value;
@@ -1258,7 +1258,7 @@ function printProposal() {
   const companyName = document.getElementById("companyName").value || "Your Company Name";
   const previewContent = document.getElementById("previewPaper").innerHTML;
   const w = window.open("", "_blank");
-  w.document.write("<!DOCTYPE html>\n<html><head><title>Proposal — " + companyName + "</title>\n" +
+  w.document.write("<!DOCTYPE html>\n<html><head><title>Proposal: " + companyName + "</title>\n" +
     "<style>\n" +
     "  @page { margin: 0.5in; }\n" +
     "  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a1a; padding: 0; margin: 0; }\n" +

@@ -1,4 +1,4 @@
-// SQLite setup and schema. Uses Node's built-in node:sqlite — no native deps.
+// SQLite setup and schema. Uses Node's built-in node:sqlite: no native deps.
 const { DatabaseSync } = require("node:sqlite");
 const fs = require("node:fs");
 const path = require("node:path");

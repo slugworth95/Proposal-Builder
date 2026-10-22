@@ -53,7 +53,7 @@ router.get("/", (req, res) => {
   res.json(rows.map(serializeItem));
 });
 
-// POST /api/catalog — add item
+// POST /api/catalog: add item
 router.post("/", (req, res) => {
   const { label, category = "Product", price = 0 } = req.body || {};
   if (!label || !String(label).trim()) {
@@ -77,7 +77,7 @@ router.post("/", (req, res) => {
     .json(serializeItem(db.prepare("SELECT * FROM catalog_items WHERE id = ?").get(Number(result.lastInsertRowid))));
 });
 
-// PUT /api/catalog/:id — update item
+// PUT /api/catalog/:id: update item
 router.put("/:id", (req, res) => {
   const existing = db
     .prepare("SELECT * FROM catalog_items WHERE id = ? AND user_id = ?")
@@ -116,7 +116,7 @@ router.delete("/:id", (req, res) => {
   res.status(204).end();
 });
 
-// POST /api/catalog/reset — restore default catalog
+// POST /api/catalog/reset: restore default catalog
 router.post("/reset", (req, res) => {
   db.prepare("DELETE FROM catalog_items WHERE user_id = ?").run(req.user.id);
   const insert = db.prepare(

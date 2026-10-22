@@ -76,7 +76,7 @@
             <option value="invoiced">Invoiced</option>
           </select>
           <select id="savedProposalsSelect">
-            <option value="">— Saved proposals —</option>
+            <option value="">- Saved proposals -</option>
           </select>
           <button class="btn-save" onclick="saveCurrentProposal()">💾 Save</button>
           <button class="btn-load" onclick="loadSelectedProposal()">📂 Load</button>
@@ -142,9 +142,9 @@
           <label>Discount Tier <span style="font-weight:400;text-transform:none;color:#999;">(volume/partner pricing level)</span></label>
           <select id="discountTier" onchange="markDirty(); updatePreview()">
             <option value="Standard">Standard (List Price)</option>
-            <option value="Tier 1">Tier 1 — Volume Builder (5% off)</option>
-            <option value="Tier 2">Tier 2 — Preferred Partner (10% off)</option>
-            <option value="Tier 3">Tier 3 — Strategic Partner (15% off)</option>
+            <option value="Tier 1">Tier 1: Volume Builder (5% off)</option>
+            <option value="Tier 2">Tier 2: Preferred Partner (10% off)</option>
+            <option value="Tier 3">Tier 3: Strategic Partner (15% off)</option>
             <option value="Custom">Custom Discount</option>
           </select>
         </div>
@@ -162,10 +162,10 @@
             <label>Payment Terms</label>
             <select id="paymentTerms" onchange="markDirty(); updatePreview()">
               <option value="50% deposit due at signing, balance due on completion.">50% Deposit / 50% on Completion</option>
-              <option value="Net 30 — Full payment due within 30 days of invoice.">Net 30</option>
-              <option value="Net 60 — Full payment due within 60 days of invoice.">Net 60</option>
+              <option value="Net 30: Full payment due within 30 days of invoice.">Net 30</option>
+              <option value="Net 60: Full payment due within 60 days of invoice.">Net 60</option>
               <option value="100% due upon delivery.">100% Due Upon Delivery</option>
-              <option value="Custom terms — see notes below.">Custom Terms</option>
+              <option value="Custom terms: see notes below.">Custom Terms</option>
             </select>
           </div>
           <div class="form-group">
@@ -211,7 +211,7 @@
           </div>
           <button type="button" class="btn-secondary" onclick="fetchClientsFromTracker()">🔗 Fetch Clients</button>
           <select id="ctClientSelect" style="margin-top:0.5rem;width:100%;" onchange="applyTrackerClient()">
-            <option value="">— Select a client —</option>
+            <option value="">- Select a client -</option>
           </select>
           <div class="form-group" style="margin-top:0.75rem;">
             <label>Scheduling Tool URL <span style="font-weight:400;text-transform:none;color:#999;">(for Accept &amp; Schedule)</span></label>
@@ -305,7 +305,7 @@
           </div>
           <div class="preview-title">Project Proposal</div>
           <div class="preview-client" id="previewClient">
-            <strong>Prepared for</strong> — <span id="previewClientName">Client</span> · <span id="previewAddress">Address</span>
+            <strong>Prepared for</strong>: <span id="previewClientName">Client</span> · <span id="previewAddress">Address</span>
           </div>
           <div id="previewBuilderInfo" style="font-size:0.8rem;color:#555;margin-bottom:0.8rem;padding:0.4rem 0.6rem;background:#f6f8fa;border-radius:4px;display:none;"></div>
           <img class="preview-photo" id="previewPhoto" alt="Project photo">
@@ -327,7 +327,7 @@
           <div class="preview-footer">
             <div>
               Prepared by <span id="previewFooterCompany">Your Company Name</span><br>
-              <span class="valid-until" id="previewValidUntil">Valid until —</span>
+              <span class="valid-until" id="previewValidUntil">Valid until -</span>
               <br><span id="previewLeadTime" style="color:#555;"></span>
             </div>
             <div class="sig-line">

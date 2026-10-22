@@ -1,5 +1,5 @@
 // Server-side PDF rendering for proposals.
-// Pure-JS (pdfkit) — no browser, no native deps. Mirrors the print layout:
+// Pure-JS (pdfkit): no browser, no native deps. Mirrors the print layout:
 // company header, prepared-for block, project photo, scope-of-work table,
 // totals, notes/terms, and a signature footer.
 const PDFDocument = require("pdfkit");
@@ -142,7 +142,7 @@ function buildProposalPdf(data = {}) {
     .fillColor("#666666")
     .font("Helvetica")
     .fontSize(10)
-    .text("Prepared for — " + clientName + " · " + address, MARGIN, state.y, {
+    .text("Prepared for, " + clientName + " · " + address, MARGIN, state.y, {
       width: CONTENT_W,
       align: "center",
     });
@@ -181,7 +181,7 @@ function buildProposalPdf(data = {}) {
       doc.image(photoBuf, MARGIN + (CONTENT_W - w) / 2, state.y, { width: w, height: h });
       state.y += h + 12;
     } catch {
-      // Unsupported image — skip silently rather than failing the whole PDF.
+      // Unsupported image: skip silently rather than failing the whole PDF.
     }
   }
 
@@ -364,7 +364,7 @@ function buildProposalPdf(data = {}) {
     .stroke();
   state.y += 10;
 
-  const validUntil = data.validUntil ? "Valid until " + fmtDate(data.validUntil) : "Valid until —";
+  const validUntil = data.validUntil ? "Valid until " + fmtDate(data.validUntil) : "Valid until -";
   const leadTime = data.leadTime ? "\nLead time: " + data.leadTime : "";
   doc
     .fillColor(GRAY)

@@ -1,4 +1,4 @@
-// Proposal Builder — starter app logic.
+// Proposal Builder: starter app logic.
 // Drafts are stored in localStorage so they survive page reloads.
 
 const STORAGE_KEY = "proposal-builder.drafts";
@@ -27,7 +27,7 @@ function renderDrafts() {
   list.innerHTML = drafts
     .map(
       (d) =>
-        `<li><strong>${escapeHtml(d.client)}</strong> — ${escapeHtml(
+        `<li><strong>${escapeHtml(d.client)}</strong>, ${escapeHtml(
           d.title
         )} ($${Number(d.price || 0).toFixed(2)})</li>`
     )

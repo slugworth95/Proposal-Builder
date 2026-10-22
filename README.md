@@ -1,19 +1,23 @@
 # Proposal-Builder
 
-Create, manage, and send professional client proposals. A full-stack app: vanilla JS frontend with live preview, Express API, SQLite database, and token-based auth — with built-in integration with [Client-Tracker](https://github.com/slugworth95/Client-Tracker).
+> **SUPERSEDED**: This tool has been merged into Slugworth Suite (one app: clients, proposals, invoices, scheduling). This repo is kept for reference, not archived. See the pre-merge-2026-09-11 tag for the final standalone state.
+
+![Proposal Builder proposal with live preview](screenshots/proposal.png)
+
+Create, manage, and send professional client proposals. A full-stack app: vanilla JS frontend with live preview, Express API, SQLite database, and token-based auth, with built-in integration with [Client-Tracker](https://github.com/slugworth95/Client-Tracker).
 
 ## Features
 
 ### Proposal Management
-- **Create Proposals** — build detailed proposals for any project type
-- **Save & Load** — proposals persist per-user in SQLite (no more localStorage)
-- **Version History** — save multiple versions of a proposal with descriptive labels
-- **Search** — find saved proposals by title, client, or proposal number
-- **Status Filter** — narrow the saved list by status (draft / sent / accepted / declined / invoiced)
-- **Reset** — clear all fields and start fresh
+- **Create Proposals**: build detailed proposals for any project type
+- **Save & Load**: proposals persist per-user in SQLite (no more localStorage)
+- **Version History**: save multiple versions of a proposal with descriptive labels
+- **Search**: find saved proposals by title, client, or proposal number
+- **Status Filter**: narrow the saved list by status (draft / sent / accepted / declined / invoiced)
+- **Reset**: clear all fields and start fresh
 
 ### Company Branding
-- Company name, tagline & address — flows through the preview, print, and email output, including a generated initials icon
+- Company name, tagline & address: flows through the preview, print, and email output, including a generated initials icon
 
 ### Line Items & Product Catalog
 - Pick items from a per-user catalog (Product, Service, Labor, Custom) or add custom items
@@ -27,31 +31,31 @@ Create, manage, and send professional client proposals. A full-stack app: vanill
 - 50% Deposit / 50% on Completion, Net 30, Net 60, 100% Due Upon Delivery, or Custom
 
 ### Client Tracker Integration
-- Paste your Client Tracker URL + API token, click **Fetch Clients**, pick a client, and the proposal auto-fills client name, email, and company — the linked client id is stored on the proposal
+- Paste your Client Tracker URL + API token, click **Fetch Clients**, pick a client, and the proposal auto-fills client name, email, and company; the linked client id is stored on the proposal
 
 ### Workflow: Accept & Schedule
 - Proposals have a status: draft / sent / accepted / declined
-- **Mark as Sent** — one-click status change to *sent* (records the sent date)
-- **Accept & Schedule** marks the proposal accepted and creates an appointment in the Scheduling Tool (port 3003) for the proposal's client — powered by the shared SSO session
-- Status timeline — sent/accepted dates are tracked per proposal and shown under the status dropdown
+- **Mark as Sent**: one-click status change to *sent* (records the sent date)
+- **Accept & Schedule** marks the proposal accepted and creates an appointment in the Scheduling Tool (port 3003) for the proposal's client, powered by the shared SSO session
+- Status timeline: sent/accepted dates are tracked per proposal and shown under the status dropdown
 
 ### Export & Sharing
-- **Download PDF** — server-side PDF generation (pdfkit, no browser needed); works for saved proposals and unsaved drafts
-- **Print / Save as PDF** — print-optimized layout
-- **Email to Client** — pre-filled email via mail client
-- **Download JSON / Import JSON** — full proposal backup and restore
-- **Export CSV** — proposal summary + line items for spreadsheets
+- **Download PDF**: server-side PDF generation (pdfkit, no browser needed); works for saved proposals and unsaved drafts
+- **Print / Save as PDF**: print-optimized layout
+- **Email to Client**: pre-filled email via mail client
+- **Download JSON / Import JSON**: full proposal backup and restore
+- **Export CSV**: proposal summary + line items for spreadsheets
 
 ### Presentation
 - Project photo, client signature field, valid-until date, estimated completion / lead time
 
 ## Shared sign-on (SSO)
 
-All four tools share one login. Users and sessions live in a shared database (`~/.slugworth/auth.db`, override with `SLUGWORTH_DB_PATH`), and the session token is stored in a shared `slugworth_token` cookie on `localhost` — cookies are shared across ports, so signing in on any tool signs you into all of them. Each server accepts the token from the `Authorization` header or the cookie.
+All four tools share one login. Users and sessions live in a shared database (`~/.slugworth/auth.db`, override with `SLUGWORTH_DB_PATH`), and the session token is stored in a shared `slugworth_token` cookie on `localhost`, cookies are shared across ports, so signing in on any tool signs you into all of them. Each server accepts the token from the `Authorization` header or the cookie.
 
 ## Run locally
 
-Requires Node.js 22.5+ (uses the built-in `node:sqlite` — no native dependencies).
+Requires Node.js 22.5+ (uses the built-in `node:sqlite`, no native dependencies).
 
 ```bash
 npm install
@@ -60,8 +64,8 @@ npm start
 
 Open http://localhost:3001. The SQLite database is created automatically in `data/` (gitignored).
 
-- `npm start` — run the server
-- `npm run dev` — run with auto-restart on file changes
+- `npm start`: run the server
+- `npm run dev`: run with auto-restart on file changes
 
 > Note: Proposal Builder runs on port **3001** so it can run alongside Client Tracker (port 3000).
 
@@ -113,7 +117,7 @@ All endpoints below require `Authorization: Bearer <token>`.
 | GET | `/api/proposals/:id` | Full proposal: `{ id, title, clientName, propNum, status, sentAt, acceptedAt, data, createdAt, updatedAt }` |
 | POST | `/api/proposals` | Create. Body: `{ data }` (the full proposal object) |
 | PUT | `/api/proposals/:id` | Update. Body: `{ data }` |
-| POST | `/api/proposals/:id/status` | Update just the status. Body: `{ status }` — sets `sentAt`/`acceptedAt` on first transition to sent/accepted |
+| POST | `/api/proposals/:id/status` | Update just the status. Body: `{ status }`; sets `sentAt`/`acceptedAt` on first transition to sent/accepted |
 | GET | `/api/proposals/:id/pdf` | Server-generated PDF for a saved proposal (`application/pdf` download) |
 | POST | `/api/proposals/pdf` | Server-generated PDF from `{ data }` without saving (for unsaved drafts) |
 | DELETE | `/api/proposals/:id` | Delete (cascades versions) |
@@ -178,7 +182,7 @@ The `data` object is the full form state:
 1. Run Client Tracker (`npm start` in `Client-Tracker`, port 3000) and create an account.
 2. In Proposal Builder, open the **Client Tracker Integration** section.
 3. Enter `http://localhost:3000` and paste your Client Tracker API token (from the app's sign-in response, or `POST /api/auth/login`).
-4. Click **Fetch Clients**, then pick a client — the proposal auto-fills.
+4. Click **Fetch Clients**, then pick a client; the proposal auto-fills.
 
 ## Roadmap
 
@@ -188,5 +192,3 @@ The `data` object is the full form state:
 - [x] JSON export/import + CSV export
 - [x] PDF generation (server-side)
 - [x] Proposal status tracking (draft / sent / accepted)
-
-> **SUPERSEDED** � This tool has been merged into Slugworth Suite (one app: clients, proposals, invoices, scheduling). This repo is archived for reference. See the pre-merge-2026-09-11 tag for the final standalone state.

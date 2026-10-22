@@ -50,7 +50,7 @@ function serializeVersion(row) {
   return { id: row.id, label: row.label, data, savedAt: row.saved_at };
 }
 
-// GET /api/proposals?search=&status= — list summaries (no full data)
+// GET /api/proposals?search=&status=: list summaries (no full data)
 router.get("/", (req, res) => {
   const { search = "", status = "" } = req.query;
   let sql =
@@ -82,7 +82,7 @@ router.get("/", (req, res) => {
   );
 });
 
-// GET /api/proposals/:id — full proposal
+// GET /api/proposals/:id: full proposal
 router.get("/:id", (req, res) => {
   const row = db
     .prepare("SELECT * FROM proposals WHERE id = ? AND user_id = ?")
@@ -91,7 +91,7 @@ router.get("/:id", (req, res) => {
   res.json(serializeProposal(row));
 });
 
-// POST /api/proposals — create
+// POST /api/proposals: create
 router.post("/", (req, res) => {
   const { data } = req.body || {};
   if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -114,7 +114,7 @@ router.post("/", (req, res) => {
     .json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(Number(result.lastInsertRowid))));
 });
 
-// POST /api/proposals/pdf — generate a PDF from a data object without saving.
+// POST /api/proposals/pdf: generate a PDF from a data object without saving.
 // Must be registered before POST /:id so "pdf" isn't treated as an id.
 router.post("/pdf", (req, res) => {
   const { data } = req.body || {};
@@ -124,7 +124,7 @@ router.post("/pdf", (req, res) => {
   sendPdf(res, data);
 });
 
-// GET /api/proposals/:id/pdf — generate a PDF for a saved proposal.
+// GET /api/proposals/:id/pdf: generate a PDF for a saved proposal.
 router.get("/:id/pdf", (req, res) => {
   const row = db
     .prepare("SELECT * FROM proposals WHERE id = ? AND user_id = ?")
@@ -151,7 +151,7 @@ function sendPdf(res, data) {
     });
 }
 
-// PUT /api/proposals/:id — update
+// PUT /api/proposals/:id: update
 router.put("/:id", (req, res) => {
   const existing = db
     .prepare("SELECT * FROM proposals WHERE id = ? AND user_id = ?")
@@ -185,7 +185,7 @@ router.put("/:id", (req, res) => {
   res.json(serializeProposal(db.prepare("SELECT * FROM proposals WHERE id = ?").get(existing.id)));
 });
 
-// POST /api/proposals/:id/status — update just the status (used by other tools
+// POST /api/proposals/:id/status: update just the status (used by other tools
 // in the workflow, e.g. Scheduling Tool marks a proposal "invoiced").
 router.post("/:id/status", (req, res) => {
   const existing = db
@@ -240,7 +240,7 @@ router.get("/:id/versions", (req, res) => {
   res.json(rows.map(serializeVersion));
 });
 
-// POST /api/proposals/:id/versions — save a version
+// POST /api/proposals/:id/versions: save a version
 router.post("/:id/versions", (req, res) => {
   const proposal = db
     .prepare("SELECT id FROM proposals WHERE id = ? AND user_id = ?")
